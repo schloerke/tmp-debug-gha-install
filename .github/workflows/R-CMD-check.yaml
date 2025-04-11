@@ -62,26 +62,14 @@ jobs:
             message("Starting callr to install: ")
             print(packages)
           
-            callr::r(
-              function(packages, upgrade, dependencies) {          
-                # Performing a leap of faith that pak is installed.
-                # Avoids weird installs when using pak to install shinycoreci
-                stopifnot(utils::packageVersion("pak") >= "0.3.0")
-                pak__pkg_install <- utils::getFromNamespace("pkg_install", "pak")
-                pak__pkg_install(
-                  packages,
-                  ask = FALSE, # Not interactive, so don't ask
-                  upgrade = upgrade,
-                  dependencies = dependencies
-                )
-              },
-              list(
-                packages = packages,
-                upgrade = TRUE,
-                dependencies = NA
-              ),
-              show = TRUE,
-              supervise = TRUE,
-              spinner = TRUE # helps with CI from timing out
+            # Performing a leap of faith that pak is installed.
+            # Avoids weird installs when using pak to install shinycoreci
+            stopifnot(utils::packageVersion("pak") >= "0.3.0")
+            pak__pkg_install <- utils::getFromNamespace("pkg_install", "pak")
+            pak__pkg_install(
+              packages,
+              ask = FALSE, # Not interactive, so don't ask
+              upgrade = TRUE,
+              dependencies = NA
             )
           }
