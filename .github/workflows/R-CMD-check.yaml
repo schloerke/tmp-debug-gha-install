@@ -33,7 +33,7 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -45,9 +45,70 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          packages: |
+            any::sessioninfo
+            rstudio/shinycoreci
+            rappdirs
           needs: check
 
-      - uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
+      - name: Repo status
+        shell: Rscript {0}
+        run: | 
+          shinyverse_cran_url <- "https://posit-dev-shinycoreci.r-universe.dev"
+          shinycoreci_libpath <- function() {
+            # Dir location inspration from learnr:
+            # https://github.com/rstudio/learnr/blob/1c01ac258230cbe217eee16c77cc71924faab1d3/R/storage.R#L275
+            dir <- file.path(
+              rappdirs::user_data_dir(),
+              "R",
+              "shinycoreci",
+              paste0("R-", gsub(".", "_", getRversion(), fixed = TRUE))
+            )
+            # Provide a fully defined path. Things don't like to work without a fully defined path in pak
+            if (!dir.exists(dir)) {
+              dir.create(dir, recursive = TRUE)
+            }
+            # Must normalize after creating the directory to avoid warning
+            dir <- normalizePath(dir)
+            dir
+          }
+          libpath <- shinycoreci_libpath()
+
+          for (packages in list(
+            c("rsconnect", "shiny", "shinyjster", "shinytest2"),
+            c("shiny", "shinytest2"),
+          ) {
+            message("Starting callr to install: ")
+            print(packages)
+          
+            callr::r(
+              function(shinyverse_cran_url, packages, upgrade, dependencies) {
+                options(repos = c(
+                  # Use the shinycoreci universe to avoid GH rate limits!
+                  "AAA" = shinyverse_cran_url,
+                  getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
+                ))
+          
+                # Performing a leap of faith that pak is installed.
+                # Avoids weird installs when using pak to install shinycoreci
+                stopifnot(utils::packageVersion("pak") >= "0.3.0")
+                pak__pkg_install <- utils::getFromNamespace("pkg_install", "pak")
+                pak__pkg_install(
+                  packages,
+                  ask = FALSE, # Not interactive, so don't ask
+                  upgrade = upgrade,
+                  dependencies = dependencies
+                )
+              },
+              list(
+                shinyverse_cran_url = shinyverse_cran_url,
+                packages = packages,
+                upgrade = TRUE,
+                dependencies = NA
+              ),
+              show = TRUE,
+              libpath = libpath,
+              supervise = TRUE,
+              spinner = TRUE # helps with CI from timing out
+            )
+          }
