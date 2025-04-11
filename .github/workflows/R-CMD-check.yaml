@@ -76,7 +76,7 @@ jobs:
 
           for (packages in list(
             c("rsconnect", "shiny", "shinyjster", "shinytest2"),
-            c("shiny", "shinytest2"),
+            c("shiny", "shinytest2")
           ) {
             message("Starting callr to install: ")
             print(packages)
