@@ -50,13 +50,11 @@ jobs:
             rstudio/shinycoreci
             rappdirs
           needs: check
+          cache: false
 
       - name: Repo status
         shell: Rscript {0}
         run: | 
-          shinyverse_cran_url <- "https://posit-dev-shinycoreci.r-universe.dev"
-          libpath <- .libPaths()[1]
-
           for (packages in list(
             c("rsconnect", "shiny", "shinyjster", "shinytest2"),
             c("shiny", "shinytest2")
@@ -65,13 +63,7 @@ jobs:
             print(packages)
           
             callr::r(
-              function(shinyverse_cran_url, packages, upgrade, dependencies) {
-                options(repos = c(
-                  # Use the shinycoreci universe to avoid GH rate limits!
-                  "AAA" = shinyverse_cran_url,
-                  getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
-                ))
-          
+              function(packages, upgrade, dependencies) {          
                 # Performing a leap of faith that pak is installed.
                 # Avoids weird installs when using pak to install shinycoreci
                 stopifnot(utils::packageVersion("pak") >= "0.3.0")
@@ -84,13 +76,11 @@ jobs:
                 )
               },
               list(
-                shinyverse_cran_url = shinyverse_cran_url,
                 packages = packages,
                 upgrade = TRUE,
                 dependencies = NA
               ),
               show = TRUE,
-              libpath = libpath,
               supervise = TRUE,
               spinner = TRUE # helps with CI from timing out
             )
