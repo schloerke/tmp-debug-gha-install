@@ -58,6 +58,7 @@ jobs:
       - name: Repo status
         shell: Rscript {0}
         run: |
+          shinyverse_cran_url <- "https://posit-dev-shinycoreci.r-universe.dev"
           libpath <- "./local-lib"
           if (!dir.exists(libpath)) {
             dir.create(libpath, recursive = TRUE)
@@ -75,6 +76,8 @@ jobs:
               {
                 withr::local_options(
                   repos = c(
+                    # Use the shinycoreci universe to avoid GH rate limits!
+                    "AAA" = shinyverse_cran_url,
                     getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
                   )
                 )
