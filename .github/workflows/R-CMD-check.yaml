@@ -22,11 +22,11 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest,   r: 'release'}
-          - {os: windows-latest,   r: 'oldrel-1'}
-          - {os: windows-latest,   r: 'oldrel-2'}
-          - {os: windows-latest,   r: 'oldrel-3'}
-          - {os: windows-latest,   r: 'oldrel-4'}
+          - { os: windows-latest, r: "release" }
+          - { os: windows-latest, r: "oldrel-1" }
+          - { os: windows-latest, r: "oldrel-2" }
+          - { os: windows-latest, r: "oldrel-3" }
+          - { os: windows-latest, r: "oldrel-4" }
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -42,6 +42,7 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          cache: false
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -50,10 +51,11 @@ jobs:
             rstudio/shinycoreci
             rappdirs
           needs: check
+          cache: false
 
       - name: Repo status
         shell: Rscript {0}
-        run: | 
+        run: |
           shinyverse_cran_url <- "https://posit-dev-shinycoreci.r-universe.dev"
           shinycoreci_libpath <- function() {
             # Dir location inspration from learnr:
@@ -80,7 +82,7 @@ jobs:
           )) {
             message("Starting callr to install: ")
             print(packages)
-          
+
             callr::r(
               function(shinyverse_cran_url, packages, upgrade, dependencies) {
                 options(repos = c(
@@ -88,7 +90,7 @@ jobs:
                   "AAA" = shinyverse_cran_url,
                   getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
                 ))
-          
+
                 # Performing a leap of faith that pak is installed.
                 # Avoids weird installs when using pak to install shinycoreci
                 stopifnot(utils::packageVersion("pak") >= "0.3.0")
