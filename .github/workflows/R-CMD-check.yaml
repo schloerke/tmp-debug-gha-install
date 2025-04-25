@@ -22,18 +22,18 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest,   r: 'release'}
-          - {os: windows-latest,   r: 'oldrel-1'}
-          - {os: windows-latest,   r: 'oldrel-2'}
-          - {os: windows-latest,   r: 'oldrel-3'}
-          - {os: windows-latest,   r: 'oldrel-4'}
+          - { os: windows-latest, r: "release" }
+          - { os: windows-latest, r: "oldrel-1" }
+          - { os: windows-latest, r: "oldrel-2" }
+          - { os: windows-latest, r: "oldrel-3" }
+          - { os: windows-latest, r: "oldrel-4" }
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -42,12 +42,36 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          extra-repositories: |
+            https://posit-dev-shinycoreci.r-universe.dev
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          packages: |
+            any::sessioninfo
+            rstudio/shinycoreci
+            rappdirs
           needs: check
+          cache: false
+      # We know when libpath is utilized, the embeded nul error is present
+      # - Local libpath caused an issue
+      # - Does callr surface the error w/ libpath? No
+      # - shinyverse repos caused an issue
 
-      - uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
+      - name: Repo status
+        shell: Rscript {0}
+        run: |
+          for (packages in list(
+            c("rsconnect", "shiny", "shinytest2"),
+            c("shiny", "shinytest2")
+          )) {
+            message("Starting callr to install: ")
+            print(packages)
+
+            pak::pkg_install(
+              packages,
+              ask = FALSE, # Not interactive, so don't ask
+              upgrade = TRUE,
+              dependencies = NA
+            )
+          }
