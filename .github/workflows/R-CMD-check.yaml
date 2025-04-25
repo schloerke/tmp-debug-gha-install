@@ -61,11 +61,6 @@ jobs:
       - name: Repo status
         shell: Rscript {0}
         run: |
-          libpath <- "./local-lib"
-          if (!dir.exists(libpath)) {
-            dir.create(libpath, recursive = TRUE)
-          }
-
           for (packages in list(
             c("rsconnect", "shiny", "shinytest2"),
             c("shiny", "shinytest2")
@@ -73,15 +68,10 @@ jobs:
             message("Starting callr to install: ")
             print(packages)
 
-            withr::with_libpaths(
-              libpath,
-              {
-                pak::pkg_install(
-                  packages,
-                  ask = FALSE, # Not interactive, so don't ask
-                  upgrade = TRUE,
-                  dependencies = NA
-                )
-              }
+            pak::pkg_install(
+              packages,
+              ask = FALSE, # Not interactive, so don't ask
+              upgrade = TRUE,
+              dependencies = NA
             )
           }
