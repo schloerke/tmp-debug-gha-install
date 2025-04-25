@@ -53,6 +53,9 @@ jobs:
           needs: check
           cache: false
 
+      # We know when libpath is utilized, the embeded nul error is present
+      # - [ ] Does callr surface the error w/ libpath?
+
       - name: Repo status
         shell: Rscript {0}
         run: |
@@ -83,34 +86,22 @@ jobs:
             message("Starting callr to install: ")
             print(packages)
 
-            callr::r(
-              function(shinyverse_cran_url, packages, upgrade, dependencies) {
-                options(repos = c(
-                  # Use the shinycoreci universe to avoid GH rate limits!
-                  "AAA" = shinyverse_cran_url,
-                  getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
-                ))
-
-                # Performing a leap of faith that pak is installed.
-                # Avoids weird installs when using pak to install shinycoreci
-                stopifnot(utils::packageVersion("pak") >= "0.3.0")
-                pak__pkg_install <- utils::getFromNamespace("pkg_install", "pak")
-                pak__pkg_install(
+            withr::with_libpaths(
+              libpath,
+              {
+                withr::local_options(
+                  repos = c(
+                    # Use the shinycoreci universe to avoid GH rate limits!
+                    "AAA" = shinyverse_cran_url,
+                    getOption("repos", c("CRAN" = "https://cloud.r-project.org"))
+                  )
+                )
+                pak::pkg_install(
                   packages,
                   ask = FALSE, # Not interactive, so don't ask
-                  upgrade = upgrade,
-                  dependencies = dependencies
+                  upgrade = TRUE,
+                  dependencies = NA
                 )
-              },
-              list(
-                shinyverse_cran_url = shinyverse_cran_url,
-                packages = packages,
-                upgrade = TRUE,
-                dependencies = NA
-              ),
-              show = TRUE,
-              libpath = libpath,
-              supervise = TRUE,
-              spinner = TRUE # helps with CI from timing out
+              }
             )
           }
